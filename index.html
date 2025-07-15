@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Agrim Gupta - Weather App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f0f0f, #1c1c1c, #2a2a2a);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .top-left-name {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.05);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+
+    h1 {
+      font-size: 3rem;
+      background: linear-gradient(45deg, #fff, #ccc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    p.subtitle {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .search-box {
+      display: flex;
+      width: 100%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 15px 60px 15px 20px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255,255,255,0.06);
+      color: white;
+      font-size: 1rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(6px);
+    }
+
+    .search-box button {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      color: white;
+      font-size: 1.2rem;
+    }
+
+    .weather-card {
+      margin-top: 40px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .city {
+      font-size: 2rem;
+      font-weight: 300;
+    }
+
+    .date {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 20px;
+    }
+
+    .weather-icon {
+      font-size: 4rem;
+      margin-bottom: 10px;
+    }
+
+    .temp {
+      font-size: 3rem;
+      font-weight: 200;
+    }
+
+    .desc {
+      margin: 10px 0;
+      text-transform: capitalize;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .details {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .details div {
+      flex: 1 1 45%;
+      background: rgba(255,255,255,0.03);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+    }
+
+    .loading, .error {
+      margin-top: 40px;
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="top-left-name">Agrim Gupta</div>
+
+  <h1>Weather App</h1>
+  <p class="subtitle">Live Weather Forecast 🌤️</p>
+
+  <div class="search-box">
+    <input type="text" id="cityInput" placeholder="Enter city..." />
+    <button onclick="getWeather()">🔍</button>
+  </div>
+
+  <div id="weatherContainer"></div>
+
+  <script>
+    const API_KEY = '39810b92cc44f0b69c5ca7386f60fc62';
+    const API_URL = 'https://api.openweathermap.org/data/2.5/weather';
+
+    const container = document.getElementById('weatherContainer');
+
+    function getWeatherIcon(code) {
+      if (code >= 200 && code < 300) return '⛈️';
+      if (code >= 300 && code < 400) return '🌦️';
+      if (code >= 500 && code < 600) return '🌧️';
+      if (code >= 600 && code < 700) return '❄️';
+      if (code >= 700 && code < 800) return '🌫️';
+      if (code === 800) return '☀️';
+      if (code > 800) return '☁️';
+      return '🌤️';
+    }
+
+    function formatDate() {
+      const now = new Date();
+      return now.toLocaleString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    async function getWeather() {
+      const city = document.getElementById('cityInput').value.trim();
+      if (!city) return showError('Please enter a city name.');
+
+      showLoading();
+      try {
+        const res = await fetch(`${API_URL}?q=${city}&appid=${API_KEY}&units=metric`);
+        if (!res.ok) throw new Error('City not found');
+        const data = await res.json();
+        displayWeather(data);
+      } catch (err) {
+        showError('City not found. Try again.');
+      }
+    }
+
+    function showLoading() {
+      container.innerHTML = `<div class="loading">Loading weather...</div>`;
+    }
+
+    function showError(msg) {
+      container.innerHTML = `<div class="error">❌ ${msg}</div>`;
+    }
+
+    function displayWeather(data) {
+      const icon = getWeatherIcon(data.weather[0].id);
+      container.innerHTML = `
+        <div class="weather-card">
+          <div class="city">${data.name}</div>
+          <div class="date">${formatDate()}</div>
+          <div class="weather-icon">${icon}</div>
+          <div class="temp">${Math.round(data.main.temp)}°C</div>
+          <div class="desc">${data.weather[0].description}</div>
+          <div class="details">
+            <div><strong>Feels Like:</strong> ${Math.round(data.main.feels_like)}°C</div>
+            <div><strong>Humidity:</strong> ${data.main.humidity}%</div>
+            <div><strong>Wind Speed:</strong> ${data.wind.speed} m/s</div>
+            <div><strong>Pressure:</strong> ${data.main.pressure} hPa</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Enter key support
+    document.getElementById('cityInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') getWeather();
+    });
+
+    // Load Delhi by default
+    window.onload = () => {
+      document.getElementById('cityInput').value = 'Delhi';
+      getWeather();
+    };
+  </script>
+</body>
+</html>
+</html>
